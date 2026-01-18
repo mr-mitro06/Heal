@@ -53,6 +53,15 @@
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
+        /* Breathing animation for "Alive" look */
+        .animate-breathe {
+            animation: breathe 4s ease-in-out infinite;
+            transform-origin: bottom center;
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scaleY(1) scaleX(1); }
+            50% { transform: scaleY(1.05) scaleX(0.98); }
+        }
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -103,6 +112,10 @@
         const Coins = (props) => <Icon {...props}><circle cx="12" cy="12" r="8"/><path d="M12 16V8"/><path d="M10 10h4"/></Icon>;
         const Gift = (props) => <Icon {...props}><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></Icon>;
         const Lock = (props) => <Icon {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
+        const Gamepad = (props) => <Icon {...props}><line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></Icon>;
+        const LayoutDashboard = (props) => <Icon {...props}><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></Icon>;
+        const Cloud = (props) => <Icon {...props}><path d="M17.5 19c0-1.7-1.3-3-3-3c-1.7 0-3 1.3-3 3"/><path d="M17.5 19c3 0 5.5-2.5 5.5-5.5c0-2.7-2-5-4.6-5.4c-0.3-2.7-2.6-4.9-5.4-4.9c-2.3 0-4.3 1.5-5.1 3.6C4.7 7.2 2 9.7 2 12.8c0 3 2.5 5.5 5.5 5.5"/><path d="M12 10v9"/><path d="M8 14l4 4 4-4"/></Icon>; // Using as simpler cloud
+        const Sprout = (props) => <Icon {...props}><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></Icon>;
 
         // --- Data ---
         const avatars = [
@@ -154,85 +167,380 @@
             });
         };
 
-        // --- Components ---
+        // --- GAME COMPONENTS ---
 
-        const Modal = ({ title, children, onClose, icon }) => (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-white w-full max-w-sm p-6 rounded-[2rem] shadow-2xl border-4 border-lime-500 pop-in relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-lime-100 to-transparent -z-10"></div>
-                    <div className="flex flex-col items-center text-center">
-                        <div className="w-16 h-16 bg-lime-100 rounded-full flex items-center justify-center mb-4 text-lime-600 animate-bounce-short border-2 border-lime-200">
-                            {icon}
+        const EnergySaverGame = ({ onComplete }) => {
+            const [lights, setLights] = useState(Array(9).fill(false)); // true = ON (bad)
+            const [score, setScore] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(15);
+            const [gameOver, setGameOver] = useState(false);
+
+            useEffect(() => {
+                if (gameOver) return;
+                const interval = setInterval(() => {
+                    setLights(prev => {
+                        const newLights = [...prev];
+                        // Randomly turn on a light
+                        if (Math.random() > 0.6) {
+                            const idx = Math.floor(Math.random() * 9);
+                            newLights[idx] = true;
+                        }
+                        return newLights;
+                    });
+                }, 700);
+                return () => clearInterval(interval);
+            }, [gameOver]);
+
+            useEffect(() => {
+                if (timeLeft > 0 && !gameOver) {
+                    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+                    return () => clearInterval(timer);
+                } else if (timeLeft === 0) {
+                    setGameOver(true);
+                }
+            }, [timeLeft, gameOver]);
+
+            const toggleLight = (idx) => {
+                if (lights[idx] && !gameOver) {
+                    const newLights = [...lights];
+                    newLights[idx] = false;
+                    setLights(newLights);
+                    setScore(s => s + 10);
+                }
+            };
+
+            return (
+                <div className="flex flex-col items-center h-full">
+                    <div className="flex justify-between w-full mb-4 px-2">
+                        <span className="font-bold text-slate-600">Time: {timeLeft}s</span>
+                        <span className="font-black text-lime-600">Score: {score}</span>
+                    </div>
+                    
+                    {!gameOver ? (
+                        <div className="grid grid-cols-3 gap-4 w-full max-w-[300px]">
+                            {lights.map((isOn, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => toggleLight(i)}
+                                    className={`aspect-square rounded-2xl shadow-md transition-all duration-100 flex items-center justify-center text-4xl
+                                        ${isOn ? 'bg-yellow-300 border-b-4 border-yellow-500 active:mt-1 active:border-b-0' : 'bg-slate-700 border-b-4 border-slate-900 opacity-50 cursor-default'}`}
+                                >
+                                    {isOn ? '💡' : ''}
+                                </button>
+                            ))}
                         </div>
-                        <h3 className="text-2xl font-black text-slate-800 mb-2">{title}</h3>
-                        <div className="mb-6 text-slate-600 font-medium">{children}</div>
-                        <button 
-                            onClick={onClose}
-                            className="w-full bg-lime-500 text-white border-lime-600 btn-game py-3 rounded-xl font-black text-lg shadow-lg hover:bg-lime-400"
-                        >
-                            AWESOME!
+                    ) : (
+                        <div className="text-center mt-10">
+                            <h3 className="text-2xl font-black text-slate-800 mb-2">Game Over!</h3>
+                            <p className="text-slate-600 mb-6">You saved {score / 10} lights.</p>
+                            <button onClick={() => onComplete(score)} className="bg-lime-500 text-white px-8 py-3 rounded-xl font-black btn-game">Collect Tokens</button>
+                        </div>
+                    )}
+                    <p className="mt-6 text-sm text-slate-500 text-center">Tap the yellow lights to turn them OFF!</p>
+                </div>
+            );
+        };
+
+        const TrashMasterGame = ({ onComplete }) => {
+            const items = [
+                { icon: '🍎', type: 'compost' }, { icon: '🍌', type: 'compost' }, { icon: '🍂', type: 'compost' },
+                { icon: '🥤', type: 'recycle' }, { icon: '📰', type: 'recycle' }, { icon: '🥫', type: 'recycle' }
+            ];
+            const [currentItem, setCurrentItem] = useState(null);
+            const [score, setScore] = useState(0);
+            const [count, setCount] = useState(0);
+            const [feedback, setFeedback] = useState(null);
+
+            useEffect(() => {
+                nextItem();
+            }, []);
+
+            const nextItem = () => {
+                if (count >= 10) {
+                    onComplete(score);
+                    return;
+                }
+                const randomItem = items[Math.floor(Math.random() * items.length)];
+                setCurrentItem(randomItem);
+                setCount(c => c + 1);
+                setFeedback(null);
+            };
+
+            const handleSort = (binType) => {
+                if (currentItem.type === binType) {
+                    setScore(s => s + 10);
+                    setFeedback('✅');
+                    setTimeout(nextItem, 400);
+                } else {
+                    setFeedback('❌');
+                    setTimeout(nextItem, 400);
+                }
+            };
+
+            if (!currentItem) return <div className="text-center mt-20 font-bold">Loading...</div>;
+
+            return (
+                <div className="flex flex-col items-center h-full justify-center">
+                    <div className="mb-4 font-bold text-slate-500">{count}/10 Items</div>
+                    <div className="text-8xl mb-8 animate-bounce-short h-32 flex items-center justify-center">
+                        {feedback || currentItem.icon}
+                    </div>
+                    
+                    <div className="flex gap-4 w-full">
+                        <button onClick={() => handleSort('recycle')} className="flex-1 bg-blue-500 text-white py-6 rounded-2xl font-black text-lg btn-game border-blue-700 shadow-xl flex flex-col items-center">
+                            <RefreshCw size={32} className="mb-2" /> RECYCLE
+                        </button>
+                        <button onClick={() => handleSort('compost')} className="flex-1 bg-green-500 text-white py-6 rounded-2xl font-black text-lg btn-game border-green-700 shadow-xl flex flex-col items-center">
+                            <Leaf size={32} className="mb-2" /> COMPOST
                         </button>
                     </div>
                 </div>
-            </div>
-        );
+            );
+        };
 
-        const Dashboard = ({ user, userData, onStartMission, onClaimReward }) => {
-            // Check if daily reward is available (compare stored date with today)
+        const PipePatrolGame = ({ onComplete }) => {
+            const [leaks, setLeaks] = useState([]);
+            const [score, setScore] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(20);
+            const [gameOver, setGameOver] = useState(false);
+
+            useEffect(() => {
+                if (gameOver) return;
+                const interval = setInterval(() => {
+                    if (Math.random() > 0.3) {
+                        const id = Date.now();
+                        const x = Math.random() * 80 + 10; // 10% to 90%
+                        const y = Math.random() * 80 + 10;
+                        setLeaks(prev => [...prev, { id, x, y }]);
+                    }
+                }, 800);
+                return () => clearInterval(interval);
+            }, [gameOver]);
+
+            useEffect(() => {
+                if (timeLeft > 0 && !gameOver) {
+                    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+                    return () => clearInterval(timer);
+                } else if (timeLeft === 0) {
+                    setGameOver(true);
+                }
+            }, [timeLeft, gameOver]);
+
+            const fixLeak = (id) => {
+                setLeaks(prev => prev.filter(l => l.id !== id));
+                setScore(s => s + 10);
+            };
+
+            return (
+                <div className="h-full flex flex-col relative overflow-hidden bg-slate-100 rounded-3xl border-4 border-slate-300">
+                    <div className="absolute top-0 left-0 w-full p-2 flex justify-between z-10 bg-white/80 backdrop-blur-sm">
+                        <span className="font-bold">Time: {timeLeft}s</span>
+                        <span className="font-black text-blue-600">Score: {score}</span>
+                    </div>
+
+                    {!gameOver ? (
+                        <div className="relative w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-80">
+                            {/* Visual representation of a pipe network background could go here */}
+                            {leaks.map(leak => (
+                                <button
+                                    key={leak.id}
+                                    onClick={() => fixLeak(leak.id)}
+                                    className="absolute text-3xl animate-ping"
+                                    style={{ left: `${leak.x}%`, top: `${leak.y}%` }}
+                                >
+                                    💧
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-20">
+                            <h3 className="text-2xl font-black text-slate-800 mb-2">Pipes Fixed!</h3>
+                            <p className="text-slate-600 mb-6">Score: {score}</p>
+                            <button onClick={() => onComplete(score)} className="bg-lime-500 text-white px-8 py-3 rounded-xl font-black btn-game">Collect Tokens</button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const TreeLifeGame = ({ onComplete }) => {
+            const [stage, setStage] = useState(0); // 0: dig, 1: seed, 2: water, 3: done
+            const [clicks, setClicks] = useState(0);
+            
+            const handleClick = () => {
+                setClicks(c => c + 1);
+                // Logic: Dig (10 clicks) -> Seed (1 click) -> Water (15 clicks)
+                if (stage === 0 && clicks >= 10) {
+                    setStage(1);
+                    setClicks(0);
+                } else if (stage === 1 && clicks >= 1) {
+                    setStage(2);
+                    setClicks(0);
+                } else if (stage === 2 && clicks >= 15) {
+                    setStage(3);
+                    fireConfetti();
+                }
+            };
+
+            return (
+                <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                    {stage === 3 ? (
+                        <div className="animate-in zoom-in duration-500">
+                            <div className="text-9xl mb-4">🌳</div>
+                            <h3 className="text-2xl font-black text-green-700 mb-2">Tree Grown!</h3>
+                            <p className="mb-6 text-slate-500">You helped the planet breathe.</p>
+                            <button onClick={() => onComplete(50)} className="bg-lime-500 text-white px-8 py-3 rounded-xl font-black btn-game">Collect 50 Tokens</button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="text-9xl mb-8 transition-all duration-300 transform active:scale-90 select-none">
+                                {stage === 0 ? '🕳️' : stage === 1 ? '🌰' : '🌱'}
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-700 mb-2">
+                                {stage === 0 ? 'Tap to Dig Hole!' : stage === 1 ? 'Tap to Plant Seed!' : 'Tap fast to Water!'}
+                            </h3>
+                            
+                            <div className="w-full max-w-[200px] h-4 bg-slate-200 rounded-full overflow-hidden mb-8">
+                                <div 
+                                    className="h-full bg-lime-500 transition-all duration-100"
+                                    style={{ width: `${(clicks / (stage === 0 ? 10 : stage === 1 ? 1 : 15)) * 100}%` }}
+                                ></div>
+                            </div>
+
+                            <button 
+                                onMouseDown={handleClick}
+                                onTouchStart={(e) => { e.preventDefault(); handleClick(); }} 
+                                className="w-full max-w-[200px] py-4 bg-amber-600 text-white rounded-2xl font-black text-xl btn-game border-amber-800 shadow-xl"
+                            >
+                                {stage === 0 ? 'DIG' : stage === 1 ? 'PLANT' : 'WATER'}
+                            </button>
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        const SmogSmashGame = ({ onComplete }) => {
+            const [clouds, setClouds] = useState([]);
+            const [score, setScore] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(15);
+            const [gameOver, setGameOver] = useState(false);
+
+            useEffect(() => {
+                if (gameOver) return;
+                const spawner = setInterval(() => {
+                    const id = Date.now();
+                    const x = Math.random() * 80 + 5;
+                    const isBird = Math.random() > 0.8; // 20% chance of bird
+                    setClouds(prev => [...prev, { id, x, y: 100, isBird }]);
+                }, 600);
+
+                const mover = setInterval(() => {
+                    setClouds(prev => prev.map(c => ({...c, y: c.y - 2})).filter(c => c.y > -10));
+                }, 50);
+
+                return () => { clearInterval(spawner); clearInterval(mover); };
+            }, [gameOver]);
+
+            useEffect(() => {
+                if (timeLeft > 0 && !gameOver) {
+                    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+                    return () => clearInterval(timer);
+                } else if (timeLeft === 0) setGameOver(true);
+            }, [timeLeft, gameOver]);
+
+            const handleTap = (item) => {
+                if (item.isBird) {
+                    setScore(s => Math.max(0, s - 10)); // Penalty
+                } else {
+                    setScore(s => s + 5);
+                }
+                setClouds(prev => prev.filter(c => c.id !== item.id));
+            };
+
+            return (
+                <div className="h-full flex flex-col relative overflow-hidden bg-sky-100 rounded-3xl border-4 border-sky-200">
+                    <div className="absolute top-0 left-0 w-full p-2 flex justify-between z-10">
+                        <span className="font-bold text-slate-600">Time: {timeLeft}s</span>
+                        <span className="font-black text-sky-600">Score: {score}</span>
+                    </div>
+
+                    {!gameOver ? (
+                        <div className="w-full h-full relative">
+                            {clouds.map(c => (
+                                <div
+                                    key={c.id}
+                                    onMouseDown={() => handleTap(c)}
+                                    onTouchStart={(e) => { e.preventDefault(); handleTap(c); }}
+                                    className="absolute text-4xl cursor-pointer select-none transition-transform active:scale-150"
+                                    style={{ left: `${c.x}%`, top: `${c.y}%` }}
+                                >
+                                    {c.isBird ? '🐦' : '☁️'}
+                                </div>
+                            ))}
+                            <div className="absolute bottom-0 w-full h-10 bg-green-300 rounded-b-xl"></div>
+                        </div>
+                    ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-20">
+                            <h3 className="text-2xl font-black text-slate-800 mb-2">Clear Skies!</h3>
+                            <p className="text-slate-600 mb-6">Score: {score}</p>
+                            <button onClick={() => onComplete(score)} className="bg-sky-500 text-white px-8 py-3 rounded-xl font-black btn-game">Collect Tokens</button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- DASHBOARD & HUB ---
+
+        const Dashboard = ({ user, userData, onStartMission, onClaimReward, onViewGames }) => {
             const today = new Date().toDateString();
             const rewardAvailable = userData.lastRewardDate !== today;
             const missionDone = userData.lastMissionDate === today;
-
-            // Simple countdown for next mission
             const [timeLeft, setTimeLeft] = useState('');
 
             useEffect(() => {
-                if (rewardAvailable) {
-                    setTimeout(() => fireConfetti(), 500); // Auto confetti if reward available
-                }
-                
+                if (rewardAvailable) setTimeout(() => fireConfetti(), 500);
                 const timer = setInterval(() => {
                     const now = new Date();
                     const tomorrow = new Date(now);
                     tomorrow.setDate(tomorrow.getDate() + 1);
                     tomorrow.setHours(0, 0, 0, 0);
                     const diff = tomorrow - now;
-                    
                     const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
                     const minutes = Math.floor((diff / 1000 / 60) % 60);
                     setTimeLeft(`${hours}h ${minutes}m`);
                 }, 60000);
-                
                 return () => clearInterval(timer);
             }, [rewardAvailable]);
 
             return (
-                <div className="h-full flex flex-col p-6 w-full fade-in overflow-y-auto no-scrollbar">
-                    {/* Top Bar */}
+                <div className="h-full flex flex-col p-6 pb-24 w-full fade-in overflow-y-auto no-scrollbar">
+                    {/* Header */}
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-2 bg-white/60 p-2 pr-4 rounded-full border-2 border-white backdrop-blur-sm shadow-sm">
-                            <div className={`w-10 h-10 rounded-full overflow-hidden border-2 border-white ${user.avatar.color}`}>
+                            <div className={`w-10 h-10 rounded-full overflow-hidden border-2 border-white ${user.avatar.color} animate-breathe`}>
                                 <img src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${user.avatar.seed}`} alt="Avatar" />
                             </div>
                             <span className="font-bold text-slate-700">{user.name}</span>
                         </div>
-                        <div className="flex items-center gap-2 bg-yellow-400 text-yellow-900 px-3 py-1.5 rounded-full font-black border-b-4 border-yellow-500 shadow-sm">
-                            <Coins size={18} />
-                            <span>{userData.coins}</span>
+                        <div className="flex gap-2">
+                            <div className="flex items-center gap-1 bg-yellow-400 text-yellow-900 px-3 py-1.5 rounded-full font-black border-b-4 border-yellow-500 shadow-sm text-xs">
+                                <Coins size={14} /> {userData.coins}
+                            </div>
+                            <div className="flex items-center gap-1 bg-purple-400 text-purple-900 px-3 py-1.5 rounded-full font-black border-b-4 border-purple-500 shadow-sm text-xs">
+                                <Gamepad size={14} /> {userData.gamePoints}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Stats Card */}
+                    {/* Main Stats */}
                     <div className="bg-white rounded-[2rem] p-6 shadow-xl border-b-8 border-slate-200 mb-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Trophy size={80} />
-                        </div>
+                        <div className="absolute top-0 right-0 p-4 opacity-10"><Trophy size={80} /></div>
                         <div className="flex justify-between items-end">
                             <div>
                                 <p className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-1">Current Streak</p>
-                                <div className="text-4xl font-black text-slate-800 flex items-center gap-2">
-                                    {userData.streak} <span className="text-2xl">🔥</span>
-                                </div>
+                                <div className="text-4xl font-black text-slate-800 flex items-center gap-2">{userData.streak} <span className="text-2xl">🔥</span></div>
                             </div>
                             <div className="text-right">
                                 <p className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-1">Total XP</p>
@@ -242,180 +550,123 @@
                         <div className="mt-4 w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                             <div className="h-full bg-lime-500 w-[70%] rounded-full"></div>
                         </div>
-                        <p className="text-xs text-center text-slate-400 mt-2 font-bold">Level {Math.floor(userData.xp / 500) + 1}</p>
                     </div>
 
-                    {/* Daily Reward Section */}
+                    {/* Reward */}
                     {rewardAvailable && (
                         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2rem] p-6 text-white shadow-lg border-b-8 border-indigo-700 mb-6 relative overflow-hidden">
                             <div className="relative z-10">
                                 <h3 className="text-2xl font-black mb-1">Daily Reward!</h3>
-                                <p className="text-indigo-100 text-sm mb-4">Claim your free coins for today.</p>
-                                <button 
-                                    onClick={onClaimReward}
-                                    className="bg-yellow-400 text-yellow-900 w-full py-3 rounded-xl font-black btn-game border-yellow-500 shadow-lg flex items-center justify-center gap-2"
-                                >
+                                <button onClick={onClaimReward} className="bg-yellow-400 text-yellow-900 w-full py-3 mt-4 rounded-xl font-black btn-game border-yellow-500 shadow-lg flex items-center justify-center gap-2">
                                     <Gift size={20} /> Claim +50 Coins
                                 </button>
                             </div>
-                            <div className="absolute -right-4 -bottom-4 opacity-20 rotate-12">
-                                <Gift size={120} />
-                            </div>
                         </div>
                     )}
 
-                    {/* Mission Center */}
-                    <div className="flex-1 flex flex-col justify-end pb-4">
-                        <h3 className="font-black text-slate-700 text-xl mb-4 ml-2">Today's Mission</h3>
-                        
-                        <div className={`rounded-[2rem] p-6 shadow-lg border-b-8 transition-all relative overflow-hidden group
-                            ${missionDone ? 'bg-slate-200 border-slate-300' : 'bg-white border-lime-200 hover:border-lime-300'}`}>
-                            
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm border-b-4
-                                    ${missionDone ? 'bg-slate-300 border-slate-400 grayscale' : 'bg-lime-100 border-lime-200 text-lime-600'}`}>
-                                    🌍
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-lg text-slate-800">Eco Check-in</h4>
-                                    <p className="text-xs font-bold text-slate-400 uppercase">
-                                        {missionDone ? 'Completed' : '+100 XP available'}
-                                    </p>
-                                </div>
+                    {/* Mission */}
+                    <div className="rounded-[2rem] p-6 shadow-lg border-b-8 transition-all bg-white border-lime-200 mb-6">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm border-b-4 ${missionDone ? 'bg-slate-300 border-slate-400 grayscale' : 'bg-lime-100 border-lime-200 text-lime-600'}`}>🌍</div>
+                            <div>
+                                <h4 className="font-bold text-lg text-slate-800">Eco Check-in</h4>
+                                <p className="text-xs font-bold text-slate-400 uppercase">{missionDone ? 'Completed' : '+100 XP available'}</p>
                             </div>
-
-                            {missionDone ? (
-                                <div className="bg-slate-300/50 rounded-xl p-3 flex items-center justify-center gap-2 font-bold text-slate-500">
-                                    <Lock size={18} /> Next in {timeLeft}
-                                </div>
-                            ) : (
-                                <button 
-                                    onClick={onStartMission}
-                                    className="w-full bg-lime-500 text-white py-4 rounded-xl font-black text-xl btn-game border-lime-600 shadow-xl flex items-center justify-center gap-2"
-                                >
-                                    START MISSION <ArrowRight size={24} />
-                                </button>
-                            )}
                         </div>
+                        {missionDone ? (
+                            <div className="bg-slate-300/50 rounded-xl p-3 flex items-center justify-center gap-2 font-bold text-slate-500"><Lock size={18} /> Next in {timeLeft}</div>
+                        ) : (
+                            <button onClick={onStartMission} className="w-full bg-lime-500 text-white py-4 rounded-xl font-black text-xl btn-game border-lime-600 shadow-xl flex items-center justify-center gap-2">START MISSION <ArrowRight size={24} /></button>
+                        )}
                     </div>
                 </div>
             );
         };
 
-        const QuizScreen = ({ question, onAnswer, total, current }) => {
-            const [selectedOption, setSelectedOption] = useState(null);
-            const [showScience, setShowScience] = useState(false);
-
-            const handleOptionClick = (opt) => {
-                setSelectedOption(opt);
-                setShowScience(true);
-            };
-
-            const confirmAnswer = () => {
-                onAnswer(question.id, selectedOption);
-                setSelectedOption(null);
-                setShowScience(false);
-            };
+        const GamesHub = ({ onPlayGame, gamePoints }) => {
+            const games = [
+                { id: 'lights', name: 'Energy Saver', color: 'bg-yellow-400', border: 'border-yellow-600', icon: '💡', desc: 'Turn off lights!' },
+                { id: 'trash', name: 'Trash Master', color: 'bg-green-400', border: 'border-green-600', icon: '♻️', desc: 'Sort waste fast.' },
+                { id: 'pipes', name: 'Pipe Patrol', color: 'bg-blue-400', border: 'border-blue-600', icon: '🚰', desc: 'Fix water leaks.' },
+                { id: 'tree', name: 'Tree Life', color: 'bg-amber-500', border: 'border-amber-700', icon: '🌳', desc: 'Grow a tree.' },
+                { id: 'smog', name: 'Smog Smash', color: 'bg-gray-400', border: 'border-gray-600', icon: '☁️', desc: 'Clear pollution.' },
+            ];
 
             return (
-                <div className="h-full flex flex-col p-6 pt-10 fade-in relative">
-                    {/* Progress Bar */}
-                    <div className="w-full h-4 bg-white rounded-full mb-8 border-2 border-white/50 p-1">
-                        <div 
-                            className="h-full bg-lime-500 rounded-full transition-all duration-500 ease-out"
-                            style={{ width: `${((current + 1) / total) * 100}%` }}
-                        ></div>
-                    </div>
-
-                    <div className="bg-white rounded-[2rem] p-6 shadow-xl border-b-8 border-lime-100 flex-1 flex flex-col relative overflow-hidden">
-                        <div className="absolute -right-6 -top-6 w-24 h-24 bg-lime-100 rounded-full opacity-50"></div>
-                        
-                        <div className="flex items-center gap-3 mb-6 relative z-10">
-                            <div className="w-12 h-12 rounded-2xl bg-lime-100 flex items-center justify-center text-lime-600 border-b-4 border-lime-200">
-                                {question.icon}
-                            </div>
-                            <span className="font-bold text-slate-400 uppercase tracking-wider text-sm">{question.title}</span>
-                        </div>
-
-                        <h2 className="text-2xl font-black text-slate-800 mb-8 leading-tight">{question.text}</h2>
-
-                        <div className="space-y-4 relative z-10">
-                            {question.options.map((opt, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => handleOptionClick(opt)}
-                                    className={`w-full p-4 rounded-xl font-bold text-left border-b-4 transition-all flex justify-between items-center
-                                        ${selectedOption === opt 
-                                            ? 'bg-lime-500 text-white border-lime-700 translate-y-1' 
-                                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 active:border-slate-300'}`}
-                                >
-                                    {opt.label}
-                                    {selectedOption === opt && <Check size={20} />}
-                                </button>
-                            ))}
+                <div className="h-full flex flex-col p-6 pb-24 w-full fade-in overflow-y-auto no-scrollbar">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-3xl font-black text-slate-800">Arcade</h2>
+                        <div className="flex items-center gap-2 bg-purple-100 text-purple-900 px-4 py-2 rounded-full font-black border-2 border-purple-200">
+                            <Gamepad size={20} /> {gamePoints} Tokens
                         </div>
                     </div>
 
-                    {/* Science Popup (Bottom Sheet) */}
-                    {showScience && (
-                        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-                            <div className="bg-white w-full max-w-md rounded-t-[2rem] p-6 pb-8 shadow-2xl animate-in slide-in-from-bottom border-t-8 border-indigo-100">
-                                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
-                                <div className="flex gap-3 mb-4">
-                                    <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600 h-fit">
-                                        <Info size={24} />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-black text-lg text-slate-800 mb-1">{question.science.title}</h4>
-                                        <p className="text-slate-600 leading-relaxed text-sm font-medium">{question.science.content}</p>
-                                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                        {games.map(game => (
+                            <button 
+                                key={game.id}
+                                onClick={() => onPlayGame(game.id)}
+                                className={`w-full p-4 rounded-3xl ${game.color} border-b-8 ${game.border} shadow-lg btn-game flex items-center gap-4 text-white text-left relative overflow-hidden`}
+                            >
+                                <div className="text-4xl bg-white/20 p-3 rounded-2xl backdrop-blur-sm">{game.icon}</div>
+                                <div>
+                                    <h3 className="font-black text-xl">{game.name}</h3>
+                                    <p className="text-sm font-bold opacity-90">{game.desc}</p>
                                 </div>
-                                <div className={`p-3 rounded-xl mb-6 text-sm font-bold flex items-center gap-2
-                                    ${selectedOption.type === 'green' ? 'bg-green-100 text-green-700' : 
-                                      selectedOption.type === 'yellow' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                                    <span>{selectedOption.type === 'green' ? '🌿' : selectedOption.type === 'yellow' ? '⚠️' : '🔥'}</span>
-                                    {selectedOption.feedback}
-                                </div>
-                                <button onClick={confirmAnswer} className="w-full bg-slate-800 text-white py-4 rounded-xl font-black text-lg btn-game border-slate-900">
-                                    CONTINUE
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                                <div className="absolute right-4 opacity-50"><ArrowRight size={32} /></div>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             );
         };
+
+        const BottomNav = ({ currentView, onChangeView }) => (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white rounded-full shadow-2xl border-4 border-slate-100 p-2 flex gap-2 z-50">
+                <button 
+                    onClick={() => onChangeView('dashboard')}
+                    className={`p-4 rounded-full transition-all duration-300 ${currentView === 'dashboard' ? 'bg-lime-500 text-white shadow-lg scale-110' : 'text-slate-400 hover:bg-slate-100'}`}
+                >
+                    <LayoutDashboard size={24} strokeWidth={3} />
+                </button>
+                <button 
+                    onClick={() => onChangeView('games')}
+                    className={`p-4 rounded-full transition-all duration-300 ${currentView === 'games' ? 'bg-purple-500 text-white shadow-lg scale-110' : 'text-slate-400 hover:bg-slate-100'}`}
+                >
+                    <Gamepad size={24} strokeWidth={3} />
+                </button>
+            </div>
+        );
 
         // --- Main App ---
 
         const App = () => {
-            const [view, setView] = useState('welcome'); // welcome, login, dashboard, quiz, result
+            const [view, setView] = useState('welcome'); 
+            const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, games
+            const [activeGame, setActiveGame] = useState(null); // 'lights', 'trash', etc.
             const [user, setUser] = useState(null);
             
-            // Persistent User Data
             const [userData, setUserData] = useState({
                 coins: 0,
+                gamePoints: 0, // Separate game currency
                 xp: 0,
                 streak: 0,
                 lastRewardDate: null,
                 lastMissionDate: null,
-                history: []
             });
 
+            // Quiz State
             const [currentQIndex, setCurrentQIndex] = useState(0);
             const [quizScore, setQuizScore] = useState(0);
             const [quizRedFlags, setQuizRedFlags] = useState([]);
 
-            // Load Data on Mount
             useEffect(() => {
                 const storedUser = localStorage.getItem('eco_user');
                 const storedData = localStorage.getItem('eco_data');
-                
                 if (storedUser) setUser(JSON.parse(storedUser));
                 if (storedData) setUserData(JSON.parse(storedData));
             }, []);
 
-            // Save Data on Change
             useEffect(() => {
                 if (user) localStorage.setItem('eco_user', JSON.stringify(user));
                 if (userData) localStorage.setItem('eco_data', JSON.stringify(userData));
@@ -423,23 +674,17 @@
 
             const handleLogin = (name, avatar) => {
                 setUser({ name, avatar });
-                setView('dashboard');
+                setView('main');
             };
 
             const claimDailyReward = () => {
                 const today = new Date().toDateString();
-                setUserData(prev => ({
-                    ...prev,
-                    coins: prev.coins + 50,
-                    lastRewardDate: today
-                }));
+                setUserData(prev => ({ ...prev, coins: prev.coins + 50, lastRewardDate: today }));
                 fireConfetti();
             };
 
             const startMission = () => {
-                setCurrentQIndex(0);
-                setQuizScore(0);
-                setQuizRedFlags([]);
+                setCurrentQIndex(0); setQuizScore(0); setQuizRedFlags([]);
                 setView('quiz');
             };
 
@@ -449,215 +694,98 @@
                     const q = questions.find(qu => qu.id === qId);
                     setQuizRedFlags(prev => [...prev, { id: qId, title: q.title, issue: option.label }]);
                 }
-
                 if (currentQIndex < questions.length - 1) {
                     setCurrentQIndex(prev => prev + 1);
                 } else {
-                    // Mission Complete
                     const today = new Date().toDateString();
-                    setUserData(prev => ({
-                        ...prev,
-                        xp: prev.xp + 100 + (option.score), // XP logic
-                        streak: prev.streak + 1,
-                        lastMissionDate: today,
-                        coins: prev.coins + 20 // Mission completion bonus
-                    }));
+                    setUserData(prev => ({ ...prev, xp: prev.xp + 100, streak: prev.streak + 1, lastMissionDate: today, coins: prev.coins + 20 }));
                     setView('result');
                     fireConfetti();
                 }
             };
 
-            const goHome = () => setView('dashboard');
+            // Game Logic
+            const handlePlayGame = (gameId) => {
+                setActiveGame(gameId);
+                setView('playing_game');
+            };
 
-            // --- Sub-components (Login/Result) defined inline to access state logic easily ---
+            const handleGameComplete = (score) => {
+                setUserData(prev => ({ ...prev, gamePoints: prev.gamePoints + score }));
+                setActiveGame(null);
+                setView('main');
+                fireConfetti();
+            };
+
+            // Main View Rendering (Tabs)
+            const renderMainContent = () => {
+                if (activeTab === 'dashboard') {
+                    return <Dashboard user={user} userData={userData} onStartMission={startMission} onClaimReward={claimDailyReward} />;
+                } else {
+                    return <GamesHub onPlayGame={handlePlayGame} gamePoints={userData.gamePoints} />;
+                }
+            };
 
             return (
                 <div className="w-full h-[100dvh] bg-slate-50 overflow-hidden relative flex flex-col transition-all duration-300">
-                    
-                    {/* Background decorations - positioned relative to viewport */}
                     <div className="absolute top-0 left-0 w-64 h-64 bg-lime-200 rounded-full blur-3xl opacity-40 pointer-events-none -translate-x-1/2 -translate-y-1/2"></div>
                     <div className="absolute bottom-0 right-0 w-96 h-96 bg-yellow-200 rounded-full blur-3xl opacity-40 pointer-events-none translate-x-1/4 translate-y-1/4"></div>
 
-                    {/* Content Container - Centered and constrained width for usability on PC */}
                     <div className="w-full h-full max-w-2xl mx-auto flex flex-col relative z-10">
-
                         {view === 'welcome' && (
                             <div className="flex flex-col items-center justify-center h-full text-center p-8 fade-in">
-                                <div className="w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 animate-float border-4 border-lime-200">
-                                    <Leaf size={48} className="text-lime-500" />
-                                </div>
+                                <div className="w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 animate-float border-4 border-lime-200"><Leaf size={48} className="text-lime-500" /></div>
                                 <h1 className="text-4xl font-black text-lime-800 mb-2">EcoTrace</h1>
                                 <p className="text-lime-700 font-bold text-lg mb-8 max-w-xs">Play your part in saving the planet, one day at a time.</p>
-                                <button 
-                                    onClick={() => user ? setView('dashboard') : setView('login')}
-                                    className="bg-lime-500 text-white w-full py-4 rounded-2xl font-black text-xl btn-game border-lime-600 shadow-xl"
-                                >
-                                    {user ? 'CONTINUE' : 'PLAY NOW'}
-                                </button>
+                                <button onClick={() => user ? setView('main') : setView('login')} className="bg-lime-500 text-white w-full py-4 rounded-2xl font-black text-xl btn-game border-lime-600 shadow-xl">{user ? 'CONTINUE' : 'PLAY NOW'}</button>
                             </div>
                         )}
 
                         {view === 'login' && <LoginScreen onLogin={handleLogin} />}
 
-                        {view === 'dashboard' && user && (
-                            <Dashboard 
-                                user={user} 
-                                userData={userData} 
-                                onStartMission={startMission} 
-                                onClaimReward={claimDailyReward} 
-                            />
+                        {view === 'main' && (
+                            <>
+                                {renderMainContent()}
+                                <BottomNav currentView={activeTab} onChangeView={setActiveTab} />
+                            </>
                         )}
 
-                        {view === 'quiz' && (
-                            <QuizScreen 
-                                question={questions[currentQIndex]} 
-                                onAnswer={handleAnswer} 
-                                total={questions.length} 
-                                current={currentQIndex}
-                            />
+                        {view === 'quiz' && <QuizScreen question={questions[currentQIndex]} onAnswer={handleAnswer} total={questions.length} current={currentQIndex} />}
+
+                        {view === 'playing_game' && (
+                            <div className="h-full p-6 pt-10 fade-in flex flex-col">
+                                <button onClick={() => setView('main')} className="mb-4 text-slate-500 font-bold flex items-center gap-2 hover:bg-slate-200 p-2 rounded-lg w-fit"><ArrowRight className="rotate-180" size={20}/> Back to Arcade</button>
+                                <div className="flex-1 bg-white rounded-3xl shadow-2xl p-4 border-4 border-slate-200">
+                                    {activeGame === 'lights' && <EnergySaverGame onComplete={handleGameComplete} />}
+                                    {activeGame === 'trash' && <TrashMasterGame onComplete={handleGameComplete} />}
+                                    {activeGame === 'pipes' && <PipePatrolGame onComplete={handleGameComplete} />}
+                                    {activeGame === 'tree' && <TreeLifeGame onComplete={handleGameComplete} />}
+                                    {activeGame === 'smog' && <SmogSmashGame onComplete={handleGameComplete} />}
+                                </div>
+                            </div>
                         )}
 
                         {view === 'result' && (
                             <div className="flex flex-col h-full p-6 pt-10 text-center fade-in overflow-y-auto no-scrollbar">
-                                <div className="mb-6">
-                                    <div className="w-24 h-24 bg-yellow-400 rounded-full mx-auto flex items-center justify-center text-white border-4 border-yellow-500 shadow-xl animate-bounce-short">
-                                        <Trophy size={48} />
-                                    </div>
-                                </div>
+                                <div className="mb-6"><div className="w-24 h-24 bg-yellow-400 rounded-full mx-auto flex items-center justify-center text-white border-4 border-yellow-500 shadow-xl animate-bounce-short"><Trophy size={48} /></div></div>
                                 <h2 className="text-3xl font-black text-slate-800 mb-2">Mission Complete!</h2>
                                 <p className="text-slate-500 font-bold mb-8">You earned +100 XP and Coins.</p>
-
                                 <div className="bg-white rounded-3xl p-6 shadow-xl border-b-8 border-slate-100 mb-6">
                                     <p className="text-xs uppercase tracking-widest font-black text-slate-400 mb-2">Total Score</p>
                                     <p className="text-6xl font-black text-lime-600">{quizScore}</p>
                                 </div>
-
                                 {quizRedFlags.length > 0 ? (
                                     <div className="text-left bg-red-50 rounded-3xl p-6 border-2 border-red-100 mb-6">
                                         <h3 className="font-black text-red-500 mb-4 flex items-center gap-2"><AlertCircle size={20}/> Improvements</h3>
-                                        {quizRedFlags.map((flag, idx) => (
-                                            <div key={idx} className="mb-3 last:mb-0">
-                                                <p className="font-bold text-slate-700 text-sm">{flag.title}</p>
-                                                <p className="text-red-500 text-xs font-bold">Try to avoid: {flag.issue}</p>
-                                            </div>
-                                        ))}
+                                        {quizRedFlags.map((flag, idx) => (<div key={idx} className="mb-3 last:mb-0"><p className="font-bold text-slate-700 text-sm">{flag.title}</p><p className="text-red-500 text-xs font-bold">Try to avoid: {flag.issue}</p></div>))}
                                     </div>
                                 ) : (
-                                    <div className="bg-lime-100 p-4 rounded-2xl mb-6 text-lime-700 font-bold border-2 border-lime-200">
-                                        Perfect Run! No energy wasted. 🌿
-                                    </div>
+                                    <div className="bg-lime-100 p-4 rounded-2xl mb-6 text-lime-700 font-bold border-2 border-lime-200">Perfect Run! No energy wasted. 🌿</div>
                                 )}
-
-                                <button onClick={goHome} className="mt-auto w-full bg-slate-800 text-white py-4 rounded-xl font-black text-lg btn-game border-slate-900 shadow-xl">
-                                    BACK TO HUB
-                                </button>
+                                <button onClick={() => setView('main')} className="mt-auto w-full bg-slate-800 text-white py-4 rounded-xl font-black text-lg btn-game border-slate-900 shadow-xl">BACK TO HUB</button>
                             </div>
                         )}
                     </div>
-
-                </div>
-            );
-        };
-
-        const LoginScreen = ({ onLogin }) => {
-            const [name, setName] = useState('');
-            const [selectedId, setSelectedId] = useState(1);
-            const scrollRef = useRef(null);
-            
-            // Loop logic for avatars
-            const displayAvatars = useMemo(() => {
-                let arr = [];
-                for(let i=0; i<30; i++) arr = [...arr, ...avatars];
-                return arr.map((a, i) => ({...a, uid: `${a.id}-${i}`}));
-            }, []);
-
-            useEffect(() => {
-                if(scrollRef.current) {
-                    const el = scrollRef.current;
-                    el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-                }
-            }, []);
-
-            const handleScroll = (e) => {
-                const el = e.target;
-                const center = el.scrollLeft + (el.offsetWidth / 2);
-                const children = Array.from(el.children);
-                
-                // Find closest to center
-                let closest = null;
-                let minDist = Infinity;
-                
-                children.forEach(child => {
-                    if(child.tagName !== 'BUTTON') return; // skip spacers
-                    const childCenter = child.offsetLeft + (child.offsetWidth / 2);
-                    const dist = Math.abs(center - childCenter);
-                    if(dist < minDist) {
-                        minDist = dist;
-                        closest = parseInt(child.getAttribute('data-id'));
-                    }
-                });
-                
-                if(closest && closest !== selectedId) setSelectedId(closest);
-            };
-
-            const selectAndCenter = (id, e) => {
-                e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                setSelectedId(id);
-            };
-
-            return (
-                <div className="flex flex-col h-full items-center justify-center p-6 fade-in w-full">
-                    <h2 className="text-3xl font-black text-slate-800 mb-2">Create Profile</h2>
-                    <p className="text-slate-500 font-bold mb-8">Choose your character</p>
-
-                    <div className="w-full h-40 mb-8 relative">
-                        {/* Selection Indicator Ring (Absolute Center) */}
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full border-[6px] border-lime-500 z-0 pointer-events-none"></div>
-
-                        <div 
-                            ref={scrollRef}
-                            onScroll={handleScroll}
-                            className="flex items-center gap-6 overflow-x-auto h-full px-[50%] no-scrollbar snap-x snap-mandatory py-4"
-                            style={{ scrollBehavior: 'smooth' }}
-                        >
-                            {displayAvatars.map((av) => {
-                                const isSelected = selectedId === av.id;
-                                return (
-                                    <button 
-                                        key={av.uid}
-                                        data-id={av.id}
-                                        onClick={(e) => selectAndCenter(av.id, e)}
-                                        className={`flex-shrink-0 transition-all duration-300 snap-center outline-none relative z-10
-                                            ${isSelected ? 'scale-125 opacity-100' : 'scale-90 opacity-50 grayscale'}`}
-                                    >
-                                        <div className={`w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-sm ${av.color}`}>
-                                            <img src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${av.seed}`} className="w-full h-full object-cover" />
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <div className="text-center mt-2 font-black text-lime-600 text-lg">
-                            {avatars.find(a => a.id === selectedId)?.name}
-                        </div>
-                    </div>
-
-                    <input 
-                        type="text" 
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="Enter Nickname"
-                        className="w-full p-4 rounded-xl border-4 border-slate-200 font-bold text-center text-lg focus:border-lime-400 outline-none mb-6 bg-white"
-                    />
-
-                    <button 
-                        disabled={!name}
-                        onClick={() => onLogin(name, avatars.find(a => a.id === selectedId))}
-                        className={`w-full py-4 rounded-xl font-black text-xl btn-game shadow-xl transition-all
-                            ${name ? 'bg-lime-500 text-white border-lime-600' : 'bg-slate-200 text-slate-400 border-slate-300'}`}
-                    >
-                        START GAME
-                    </button>
                 </div>
             );
         };
