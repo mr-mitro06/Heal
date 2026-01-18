@@ -24,12 +24,24 @@
     <style>
         body {
             font-family: 'Nunito', sans-serif;
-            background-color: #ecfccb; /* Lime-100 */
+            background-color: var(--bg-color, #ecfccb); /* Default: Lime-100 */
             overscroll-behavior-y: none;
             /* Game-like background pattern */
-            background-image: radial-gradient(#d9f99d 2px, transparent 2px);
+            background-image: radial-gradient(var(--pattern-color, #d9f99d) 2px, transparent 2px);
             background-size: 24px 24px;
+            transition: background-color 0.5s ease;
         }
+        :root {
+            --primary-color: #84cc16; /* lime-500 */
+            --primary-dark: #65a30d; /* lime-600 */
+            --secondary-color: #fef08a; /* yellow-200 */
+        }
+        .theme-forest { --bg-color: #ecfccb; --pattern-color: #d9f99d; }
+        .theme-ocean { --bg-color: #e0f2fe; --pattern-color: #bae6fd; } /* sky-100, sky-200 */
+        .theme-sunset { --bg-color: #ffedd5; --pattern-color: #fed7aa; } /* orange-100, orange-200 */
+        .theme-rose { --bg-color: #ffe4e6; --pattern-color: #fecdd3; } /* rose-100, rose-200 */
+        .theme-dark { --bg-color: #1e293b; --pattern-color: #334155; color: #f1f5f9; } /* slate-800, slate-700 */
+
         .fade-in {
             animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -84,7 +96,7 @@
         }
     </style>
 </head>
-<body class="text-slate-800 antialiased h-screen overflow-hidden selection:bg-lime-200">
+<body class="text-slate-800 antialiased h-screen overflow-hidden selection:bg-lime-200 transition-colors duration-500">
 
     <div id="root"></div>
 
@@ -116,6 +128,8 @@
         const LayoutDashboard = (props) => <Icon {...props}><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></Icon>;
         const Cloud = (props) => <Icon {...props}><path d="M17.5 19c0-1.7-1.3-3-3-3c-1.7 0-3 1.3-3 3"/><path d="M17.5 19c3 0 5.5-2.5 5.5-5.5c0-2.7-2-5-4.6-5.4c-0.3-2.7-2.6-4.9-5.4-4.9c-2.3 0-4.3 1.5-5.1 3.6C4.7 7.2 2 9.7 2 12.8c0 3 2.5 5.5 5.5 5.5"/><path d="M12 10v9"/><path d="M8 14l4 4 4-4"/></Icon>; // Using as simpler cloud
         const Sprout = (props) => <Icon {...props}><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></Icon>;
+        const Palette = (props) => <Icon {...props}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></Icon>;
+        const ShoppingCart = (props) => <Icon {...props}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></Icon>;
 
         // --- Data ---
         const avatars = [
@@ -127,6 +141,14 @@
             { id: 6, name: 'Terra', seed: 'Oliver', color: 'bg-stone-100' },
             { id: 7, name: 'Bloom', seed: 'Sugar', color: 'bg-pink-100' },
             { id: 8, name: 'Rocky', seed: 'Boots', color: 'bg-gray-100' },
+        ];
+
+        const themes = [
+            { id: 'forest', name: 'Forest', color: 'bg-lime-200', price: 0, locked: false },
+            { id: 'ocean', name: 'Ocean', color: 'bg-sky-200', price: 100, locked: true },
+            { id: 'sunset', name: 'Sunset', color: 'bg-orange-200', price: 200, locked: true },
+            { id: 'rose', name: 'Rose', color: 'bg-pink-200', price: 300, locked: true },
+            { id: 'dark', name: 'Midnight', color: 'bg-slate-700', price: 500, locked: true },
         ];
 
         const questions = [
@@ -491,6 +513,55 @@
             );
         };
 
+        const ThemeShop = ({ userData, onBuyTheme, onSelectTheme, onClose }) => {
+            return (
+                <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col animate-in slide-in-from-bottom duration-300">
+                    <div className="p-6 flex justify-between items-center border-b-2 border-slate-100">
+                        <h2 className="text-2xl font-black text-slate-800">Theme Shop</h2>
+                        <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200">
+                            <ArrowRight size={20} className="rotate-90" />
+                        </button>
+                    </div>
+                    
+                    <div className="p-6 grid grid-cols-2 gap-4 overflow-y-auto no-scrollbar pb-24">
+                        {userData.themes.map((theme) => (
+                            <button 
+                                key={theme.id}
+                                onClick={() => theme.locked ? onBuyTheme(theme) : onSelectTheme(theme.id)}
+                                className={`aspect-square rounded-3xl p-4 flex flex-col items-center justify-center gap-3 relative overflow-hidden transition-all
+                                    ${theme.locked ? 'bg-slate-100 border-4 border-slate-200 opacity-80' : 
+                                      userData.activeTheme === theme.id ? 'ring-4 ring-lime-500 ring-offset-2' : 'hover:scale-105'}
+                                    ${!theme.locked && theme.color}
+                                `}
+                            >
+                                <div className={`w-12 h-12 rounded-full ${theme.color} border-2 border-black/10 shadow-inner flex items-center justify-center text-2xl`}>
+                                    🎨
+                                </div>
+                                <span className="font-bold text-slate-800">{theme.name}</span>
+                                
+                                {theme.locked ? (
+                                    <div className="bg-slate-800 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                        <Gamepad size={12} /> {theme.price}
+                                    </div>
+                                ) : (
+                                    userData.activeTheme === theme.id && <div className="absolute top-2 right-2 bg-lime-500 text-white p-1 rounded-full"><Check size={12} /></div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    <div className="p-4 border-t border-slate-100 bg-white absolute bottom-0 w-full">
+                        <div className="flex justify-between items-center bg-purple-50 p-4 rounded-xl border-2 border-purple-100">
+                            <span className="font-bold text-purple-900">Your Balance:</span>
+                            <div className="flex items-center gap-2 font-black text-purple-700 text-xl">
+                                <Gamepad size={24} /> {userData.gamePoints}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- DASHBOARD & HUB ---
 
         const Dashboard = ({ user, userData, onStartMission, onClaimReward, onViewGames }) => {
@@ -583,7 +654,7 @@
             );
         };
 
-        const GamesHub = ({ onPlayGame, gamePoints }) => {
+        const GamesHub = ({ onPlayGame, gamePoints, onOpenShop }) => {
             const games = [
                 { id: 'lights', name: 'Energy Saver', color: 'bg-yellow-400', border: 'border-yellow-600', icon: '💡', desc: 'Turn off lights!' },
                 { id: 'trash', name: 'Trash Master', color: 'bg-green-400', border: 'border-green-600', icon: '♻️', desc: 'Sort waste fast.' },
@@ -596,8 +667,18 @@
                 <div className="h-full flex flex-col p-6 pb-24 w-full fade-in overflow-y-auto no-scrollbar">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-3xl font-black text-slate-800">Arcade</h2>
-                        <div className="flex items-center gap-2 bg-purple-100 text-purple-900 px-4 py-2 rounded-full font-black border-2 border-purple-200">
-                            <Gamepad size={20} /> {gamePoints} Tokens
+                        <button 
+                            onClick={onOpenShop}
+                            className="flex items-center gap-2 bg-purple-100 text-purple-900 px-4 py-2 rounded-full font-black border-2 border-purple-200 hover:bg-purple-200 transition-colors"
+                        >
+                            <ShoppingCart size={20} /> Shop
+                        </button>
+                    </div>
+                    
+                    <div className="bg-purple-500 text-white p-4 rounded-2xl mb-6 flex justify-between items-center shadow-lg border-b-4 border-purple-700">
+                        <span className="font-bold">My Tokens</span>
+                        <div className="flex items-center gap-2 text-2xl font-black">
+                            <Gamepad size={24} /> {gamePoints}
                         </div>
                     </div>
 
@@ -644,15 +725,18 @@
             const [view, setView] = useState('welcome'); 
             const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, games
             const [activeGame, setActiveGame] = useState(null); // 'lights', 'trash', etc.
+            const [showShop, setShowShop] = useState(false);
             const [user, setUser] = useState(null);
             
             const [userData, setUserData] = useState({
                 coins: 0,
-                gamePoints: 0, // Separate game currency
+                gamePoints: 0, 
                 xp: 0,
                 streak: 0,
                 lastRewardDate: null,
                 lastMissionDate: null,
+                activeTheme: 'forest',
+                themes: themes // Store themes status in user data
             });
 
             // Quiz State
@@ -664,12 +748,23 @@
                 const storedUser = localStorage.getItem('eco_user');
                 const storedData = localStorage.getItem('eco_data');
                 if (storedUser) setUser(JSON.parse(storedUser));
-                if (storedData) setUserData(JSON.parse(storedData));
+                if (storedData) {
+                    const parsed = JSON.parse(storedData);
+                    // Merge themes if new ones added in code but not in localstorage
+                    const mergedThemes = themes.map(t => {
+                        const saved = parsed.themes?.find(st => st.id === t.id);
+                        return saved ? saved : t;
+                    });
+                    setUserData({ ...parsed, themes: mergedThemes });
+                }
             }, []);
 
             useEffect(() => {
                 if (user) localStorage.setItem('eco_user', JSON.stringify(user));
                 if (userData) localStorage.setItem('eco_data', JSON.stringify(userData));
+                
+                // Apply Theme
+                document.body.className = `text-slate-800 antialiased h-screen overflow-hidden selection:bg-lime-200 transition-colors duration-500 theme-${userData.activeTheme}`;
             }, [user, userData]);
 
             const handleLogin = (name, avatar) => {
@@ -717,18 +812,37 @@
                 fireConfetti();
             };
 
+            // Shop Logic
+            const handleBuyTheme = (theme) => {
+                if (userData.gamePoints >= theme.price) {
+                    setUserData(prev => ({
+                        ...prev,
+                        gamePoints: prev.gamePoints - theme.price,
+                        themes: prev.themes.map(t => t.id === theme.id ? { ...t, locked: false } : t),
+                        activeTheme: theme.id
+                    }));
+                    fireConfetti();
+                } else {
+                    alert("Not enough Game Tokens!");
+                }
+            };
+
+            const handleSelectTheme = (id) => {
+                setUserData(prev => ({ ...prev, activeTheme: id }));
+            };
+
             // Main View Rendering (Tabs)
             const renderMainContent = () => {
                 if (activeTab === 'dashboard') {
                     return <Dashboard user={user} userData={userData} onStartMission={startMission} onClaimReward={claimDailyReward} />;
                 } else {
-                    return <GamesHub onPlayGame={handlePlayGame} gamePoints={userData.gamePoints} />;
+                    return <GamesHub onPlayGame={handlePlayGame} gamePoints={userData.gamePoints} onOpenShop={() => setShowShop(true)} />;
                 }
             };
 
             return (
                 <div className="w-full h-[100dvh] bg-slate-50 overflow-hidden relative flex flex-col transition-all duration-300">
-                    <div className="absolute top-0 left-0 w-64 h-64 bg-lime-200 rounded-full blur-3xl opacity-40 pointer-events-none -translate-x-1/2 -translate-y-1/2"></div>
+                    <div className="absolute top-0 left-0 w-64 h-64 bg-lime-200 rounded-full blur-3xl opacity-40 pointer-events-none -translate-x-1/2 -translate-y-1/2 transition-colors duration-500" style={{backgroundColor: 'var(--pattern-color)'}}></div>
                     <div className="absolute bottom-0 right-0 w-96 h-96 bg-yellow-200 rounded-full blur-3xl opacity-40 pointer-events-none translate-x-1/4 translate-y-1/4"></div>
 
                     <div className="w-full h-full max-w-2xl mx-auto flex flex-col relative z-10">
@@ -747,6 +861,14 @@
                             <>
                                 {renderMainContent()}
                                 <BottomNav currentView={activeTab} onChangeView={setActiveTab} />
+                                {showShop && (
+                                    <ThemeShop 
+                                        userData={userData} 
+                                        onBuyTheme={handleBuyTheme} 
+                                        onSelectTheme={handleSelectTheme} 
+                                        onClose={() => setShowShop(false)} 
+                                    />
+                                )}
                             </>
                         )}
 
