@@ -59,7 +59,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef, useMemo, useLayoutEffect } = React;
 
         // --- Inline Icon Components ---
         
@@ -243,10 +243,66 @@
         const LoginScreen = ({ onLogin }) => {
             const [name, setName] = useState('');
             const [selectedAvatarId, setSelectedAvatarId] = useState(avatars[0].id);
+            const scrollContainerRef = useRef(null);
+            
+            // Loop configuration to create infinite scroll feel
+            const REPEATS = 51; // Odd number so the middle set is exactly in the center
+            
+            const loopedAvatars = useMemo(() => {
+                let arr = [];
+                for(let i = 0; i < REPEATS; i++) {
+                    arr = [...arr, ...avatars];
+                }
+                // Generate unique keys to prevent React warnings
+                return arr.map((av, i) => ({ ...av, uniqueKey: `${av.id}-${i}` }));
+            }, []);
+
+            // Scroll to the middle on mount so user can scroll left or right immediately
+            useEffect(() => {
+                if(scrollContainerRef.current) {
+                    const { scrollWidth, clientWidth } = scrollContainerRef.current;
+                    // Center the scroll view
+                    scrollContainerRef.current.scrollLeft = (scrollWidth - clientWidth) / 2;
+                }
+            }, []);
+
+            // Center-select logic on scroll
+            const handleScroll = () => {
+                const container = scrollContainerRef.current;
+                if (!container) return;
+
+                const containerCenter = container.scrollLeft + (container.clientWidth / 2);
+                let closestId = null;
+                let minDiff = Infinity;
+
+                const children = container.children;
+                // Optimization: Iterate through children to find closest to center
+                for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    if (child.tagName !== 'BUTTON') continue;
+
+                    const childCenter = child.offsetLeft + (child.offsetWidth / 2);
+                    const diff = Math.abs(containerCenter - childCenter);
+                    
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestId = parseInt(child.getAttribute('data-id'));
+                    } else if (diff > minDiff) {
+                        // Optimization: if diff starts increasing, we've passed the closest one
+                        break;
+                    }
+                }
+
+                if (closestId !== null) {
+                    setSelectedAvatarId(prev => {
+                        if (prev !== closestId) return closestId;
+                        return prev;
+                    });
+                }
+            };
 
             const handleAvatarClick = (id, e) => {
-                setSelectedAvatarId(id);
-                // Center the selected element in the scroll view
+                // Center the selected element in the scroll view which will trigger scroll selection
                 e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
             };
 
@@ -264,25 +320,29 @@
                         <p className="text-green-600 text-sm sm:text-base">Choose your eco-guardian</p>
                     </div>
 
-                    {/* Avatar Selection - Horizontal Scroll with Selection Ring */}
+                    {/* Avatar Selection - Infinite Horizontal Scroll Loop with Scroll Detection */}
                     <div className="w-full mb-8">
-                        {/* Added snap-x and snap-mandatory for scroll snapping behavior */}
-                        <div className="flex justify-start sm:justify-center items-center gap-4 overflow-x-auto py-8 px-4 sm:px-2 no-scrollbar scroll-smooth snap-x snap-mandatory" style={{WebkitOverflowScrolling: 'touch'}}>
+                        <div 
+                            ref={scrollContainerRef}
+                            onScroll={handleScroll}
+                            className="flex justify-start items-center gap-4 overflow-x-auto py-8 px-4 sm:px-2 no-scrollbar scroll-smooth snap-x snap-mandatory" 
+                            style={{WebkitOverflowScrolling: 'touch'}}
+                        >
                             {/* Spacer for start of list on mobile */}
                             <div className="w-1 shrink-0 sm:hidden"></div>
-                            {avatars.map(av => {
+                            {loopedAvatars.map((av) => {
                                 const isSelected = selectedAvatarId === av.id;
                                 return (
                                     <button 
-                                        key={av.id}
+                                        key={av.uniqueKey}
+                                        data-id={av.id}
                                         onClick={(e) => handleAvatarClick(av.id, e)}
                                         className={`relative transition-all duration-300 transform flex-shrink-0 rounded-full tap-highlight-transparent outline-none snap-center
                                             ${isSelected 
                                                 ? 'scale-110 sm:scale-125 z-10 shadow-xl ring-4 ring-green-500' 
-                                                : 'scale-90 opacity-80 hover:opacity-100 hover:scale-100 blur-[0.5px] hover:blur-0 grayscale hover:grayscale-0'}
+                                                : 'scale-90 opacity-80 hover:opacity-100 hover:scale-100 grayscale hover:grayscale-0'}
                                         `}
                                     >
-                                        {/* Avatar Container: Removed borders, added isolate and transform-gpu for better clipping */}
                                         <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden isolate transform-gpu ${av.color}`}>
                                             <img 
                                                 src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${av.seed}`}
