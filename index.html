@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EcoTrace - Daily Nature Tracker</title>
+    <title>Heal - Daily Nature Tracker</title>
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -56,6 +56,21 @@
             from { opacity: 0; transform: scale(0.9); }
             to { opacity: 1; transform: scale(1); }
         }
+        
+        /* Added missing animations */
+        @keyframes slideInUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .slide-in-from-bottom { animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        @keyframes bounceShort {
+            0%, 100% { transform: translateY(-10%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
+            50% { transform: none; animation-timing-function: cubic-bezier(0,0,0.2,1); }
+        }
+        .animate-bounce-short { animation: bounceShort 1s infinite; }
+        .zoom-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
         /* Floating animation for avatars */
         .animate-float {
             animation: float 3s ease-in-out infinite;
@@ -126,7 +141,7 @@
         const Lock = (props) => <Icon {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
         const Gamepad = (props) => <Icon {...props}><line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></Icon>;
         const LayoutDashboard = (props) => <Icon {...props}><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></Icon>;
-        const Cloud = (props) => <Icon {...props}><path d="M17.5 19c0-1.7-1.3-3-3-3c-1.7 0-3 1.3-3 3"/><path d="M17.5 19c3 0 5.5-2.5 5.5-5.5c0-2.7-2-5-4.6-5.4c-0.3-2.7-2.6-4.9-5.4-4.9c-2.3 0-4.3 1.5-5.1 3.6C4.7 7.2 2 9.7 2 12.8c0 3 2.5 5.5 5.5 5.5"/><path d="M12 10v9"/><path d="M8 14l4 4 4-4"/></Icon>; // Using as simpler cloud
+        const Cloud = (props) => <Icon {...props}><path d="M17.5 19c0-1.7-1.3-3-3-3c-1.7 0-3 1.3-3 3"/><path d="M17.5 19c3 0 5.5-2.5 5.5-5.5c0-2.7-2-5-4.6-5.4c-0.3-2.7-2.6-4.9-5.4-4.9c-2.3 0-4.3 1.5-5.1 3.6C4.7 7.2 2 9.7 2 12.8c0 3 2.5 5.5 5.5 5.5"/><path d="M12 10v9"/><path d="M8 14l4 4 4-4"/></Icon>;
         const Sprout = (props) => <Icon {...props}><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></Icon>;
         const Palette = (props) => <Icon {...props}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></Icon>;
         const ShoppingCart = (props) => <Icon {...props}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></Icon>;
@@ -189,19 +204,21 @@
                 { label: 'AC 24°C + Timer', type: 'yellow', score: 10, feedback: 'Optimized.' },
                 { label: 'AC 18°C All Night', type: 'red', score: 0, feedback: 'Power hungry.' }
             ], science: { title: 'Cooling Load', content: 'Every degree below 24°C increases AC power use by 6%.' } },
-        ];
+    ];
 
-        // --- Helper: Confetti ---
-        const fireConfetti = () => {
+    // --- Helper: Confetti ---
+    const fireConfetti = () => {
+        if (typeof confetti === 'function') {
             confetti({
                 particleCount: 100,
                 spread: 70,
                 origin: { y: 0.6 },
                 colors: ['#84cc16', '#22c55e', '#eab308']
             });
-        };
+        }
+    };
 
-        // --- GAME COMPONENTS ---
+    // --- GAME COMPONENTS ---
 
         const EnergySaverGame = ({ onComplete }) => {
             const [lights, setLights] = useState(Array(9).fill(false)); // true = ON (bad)
@@ -426,7 +443,7 @@
             return (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4">
                     {stage === 3 ? (
-                        <div className="animate-in zoom-in duration-500">
+                        <div className="zoom-in">
                             <div className="text-9xl mb-4">🌳</div>
                             <h3 className="text-2xl font-black text-green-700 mb-2">Tree Grown!</h3>
                             <p className="mb-6 text-slate-500">Hard work pays off!</p>
@@ -552,7 +569,7 @@
 
         const ThemeShop = ({ userData, onBuyTheme, onSelectTheme, onClose }) => {
             return (
-                <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col animate-in slide-in-from-bottom duration-300">
+                <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col slide-in-from-bottom">
                     <div className="p-6 flex justify-between items-center border-b-2 border-slate-100">
                         <h2 className="text-2xl font-black text-slate-800">Theme Shop</h2>
                         <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200">
@@ -765,8 +782,115 @@
             </div>
         );
 
-        // --- Main App ---
+        // --- MISSING COMPONENTS IMPLEMENTED ---
+        const LoginScreen = ({ onLogin }) => {
+            const [name, setName] = useState('');
+            const [selectedAvatar, setSelectedAvatar] = useState(avatars[0]);
 
+            return (
+                <div className="flex flex-col items-center justify-center h-full p-6 fade-in text-center relative z-20">
+                    <h2 className="text-3xl font-black text-slate-800 mb-6">Create Profile</h2>
+                    <div className="w-full max-w-sm bg-white rounded-[2rem] p-6 shadow-xl border-b-8 border-slate-200">
+                        <input
+                            type="text"
+                            placeholder="Your Name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-slate-100 p-4 rounded-xl mb-6 font-bold text-slate-700 outline-none focus:ring-4 focus:ring-lime-200 transition-all border-2 border-slate-200 focus:border-lime-500"
+                        />
+                        <h3 className="font-bold text-slate-500 mb-4 text-left">Choose Avatar</h3>
+                        <div className="grid grid-cols-4 gap-3 mb-8">
+                            {avatars.map(a => (
+                                <button
+                                    key={a.id}
+                                    onClick={() => setSelectedAvatar(a)}
+                                    className={`aspect-square rounded-2xl flex items-center justify-center overflow-hidden border-4 transition-all ${selectedAvatar.id === a.id ? 'border-lime-500 scale-110 shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'} ${a.color}`}
+                                >
+                                    <img src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${a.seed}`} alt={a.name} className="w-full h-full object-cover p-2" />
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => name.trim() && onLogin(name, selectedAvatar)}
+                            disabled={!name.trim()}
+                            className="w-full bg-lime-500 text-white py-4 rounded-xl font-black text-lg btn-game border-lime-600 shadow-xl disabled:opacity-50 disabled:active:translate-y-0 disabled:border-lime-500 transition-all"
+                        >
+                            START ADVENTURE
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const QuizScreen = ({ question, onAnswer, total, current }) => {
+            const [selectedIdx, setSelectedIdx] = useState(null);
+            const [showFeedback, setShowFeedback] = useState(false);
+
+            const handleSelect = (option, idx) => {
+                if (showFeedback) return;
+                setSelectedIdx(idx);
+                setShowFeedback(true);
+                setTimeout(() => {
+                    setShowFeedback(false);
+                    setSelectedIdx(null);
+                    onAnswer(question.id, option);
+                }, 1800); // Give user time to read the science fact
+            };
+
+            return (
+                <div className="flex flex-col h-full p-6 pt-10 fade-in relative z-20">
+                    <div className="w-full bg-slate-200 h-3 rounded-full mb-8 overflow-hidden shadow-inner">
+                        <div className="h-full bg-lime-500 transition-all duration-300" style={{ width: `${((current) / total) * 100}%` }}></div>
+                    </div>
+                    
+                    <div className="bg-white rounded-[2rem] p-6 shadow-xl border-b-8 border-slate-100 mb-6 flex-1 flex flex-col relative overflow-y-auto no-scrollbar">
+                        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-6 shadow-sm border-2 border-slate-200">
+                            {question.icon}
+                        </div>
+                        <h2 className="text-2xl font-black text-slate-800 mb-2">{question.title}</h2>
+                        <p className="text-slate-600 font-bold mb-8 text-lg">{question.text}</p>
+                        
+                        <div className="flex flex-col gap-3 mt-auto mb-6">
+                            {question.options.map((opt, i) => {
+                                let btnClasses = "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95";
+                                
+                                if (showFeedback) {
+                                    if (selectedIdx === i) {
+                                        if (opt.type === 'green') btnClasses = "bg-green-100 border-green-500 text-green-800 scale-105 shadow-md";
+                                        else if (opt.type === 'yellow') btnClasses = "bg-yellow-100 border-yellow-500 text-yellow-800 scale-105 shadow-md";
+                                        else btnClasses = "bg-red-100 border-red-500 text-red-800 scale-105 shadow-md";
+                                    } else {
+                                        btnClasses = "bg-slate-50 border-slate-200 text-slate-400 opacity-50 grayscale";
+                                    }
+                                }
+
+                                return (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleSelect(opt, i)}
+                                        className={`w-full p-4 rounded-xl font-bold text-left border-b-4 transition-all duration-200 flex flex-col justify-center ${btnClasses}`}
+                                    >
+                                        <span className="text-lg">{opt.label}</span>
+                                        {showFeedback && selectedIdx === i && (
+                                            <span className="block mt-1 text-sm opacity-90 pop-in font-black uppercase tracking-wider">{opt.feedback}</span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        
+                        {showFeedback && (
+                            <div className="mt-2 p-4 bg-blue-50 rounded-2xl border-2 border-blue-100 text-blue-800 pop-in animate-float shadow-sm">
+                                <h4 className="font-black flex items-center gap-2 mb-2 text-blue-600"><Info size={18}/> Did you know?</h4>
+                                <p className="text-sm font-bold opacity-80">{question.science.content}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App ---
         const App = () => {
             const [view, setView] = useState('welcome'); 
             const [activeTab, setActiveTab] = useState('dashboard'); 
@@ -791,9 +915,10 @@
             const [quizScore, setQuizScore] = useState(0);
             const [quizRedFlags, setQuizRedFlags] = useState([]);
 
-            useEffect(() => {
-                const storedUser = localStorage.getItem('eco_user');
-                const storedData = localStorage.getItem('eco_data');
+        useEffect(() => {
+            try {
+                const storedUser = localStorage.getItem('heal_user');
+                const storedData = localStorage.getItem('heal_data');
                 if (storedUser) setUser(JSON.parse(storedUser));
                 if (storedData) {
                     const parsed = JSON.parse(storedData);
@@ -803,17 +928,24 @@
                     });
                     setUserData({ ...parsed, themes: mergedThemes });
                 }
-            }, []);
+            } catch (e) {
+                console.warn("Local storage access denied in this environment.", e);
+            }
+        }, []);
 
-            useEffect(() => {
-                if (user) localStorage.setItem('eco_user', JSON.stringify(user));
-                if (userData) localStorage.setItem('eco_data', JSON.stringify(userData));
-                
-                // Apply Theme
-                document.body.className = `text-slate-800 antialiased h-screen overflow-hidden selection:bg-lime-200 transition-colors duration-500 theme-${userData.activeTheme}`;
-            }, [user, userData]);
+        useEffect(() => {
+            try {
+                if (user) localStorage.setItem('heal_user', JSON.stringify(user));
+                if (userData) localStorage.setItem('heal_data', JSON.stringify(userData));
+            } catch (e) {
+                // Ignore storage errors in preview iframe
+            }
+            
+            // Apply Theme
+            document.body.className = `text-slate-800 antialiased h-screen overflow-hidden selection:bg-lime-200 transition-colors duration-500 theme-${userData.activeTheme}`;
+        }, [user, userData]);
 
-            const handleLogin = (name, avatar) => {
+        const handleLogin = (name, avatar) => {
                 setUser({ name, avatar });
                 setView('main');
             };
@@ -887,21 +1019,21 @@
             };
 
             return (
-                <div className="w-full h-[100dvh] bg-slate-50 overflow-hidden relative flex flex-col transition-all duration-300">
+                <div className="w-full h-[100dvh] bg-transparent overflow-hidden relative flex flex-col transition-all duration-300">
                     <div className="absolute top-0 left-0 w-64 h-64 bg-lime-200 rounded-full blur-3xl opacity-40 pointer-events-none -translate-x-1/2 -translate-y-1/2 transition-colors duration-500" style={{backgroundColor: 'var(--pattern-color)'}}></div>
                     <div className="absolute bottom-0 right-0 w-96 h-96 bg-yellow-200 rounded-full blur-3xl opacity-40 pointer-events-none translate-x-1/4 translate-y-1/4"></div>
 
-                    <div className="w-full h-full max-w-2xl mx-auto flex flex-col relative z-10">
-                        {view === 'welcome' && (
-                            <div className="flex flex-col items-center justify-center h-full text-center p-8 fade-in">
-                                <div className="w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 animate-float border-4 border-lime-200"><Leaf size={48} className="text-lime-500" /></div>
-                                <h1 className="text-4xl font-black text-lime-800 mb-2">EcoTrace</h1>
-                                <p className="text-lime-700 font-bold text-lg mb-8 max-w-xs">Play your part in saving the planet, one day at a time.</p>
-                                <button onClick={() => user ? setView('main') : setView('login')} className="bg-lime-500 text-white w-full py-4 rounded-2xl font-black text-xl btn-game border-lime-600 shadow-xl">{user ? 'CONTINUE' : 'PLAY NOW'}</button>
-                            </div>
-                        )}
+                    <div className="w-full h-full max-w-md mx-auto flex flex-col relative z-10 bg-white/30 backdrop-blur-[2px] shadow-2xl">
+                    {view === 'welcome' && (
+                        <div className="flex flex-col items-center justify-center h-full text-center p-8 fade-in">
+                            <div className="w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 animate-float border-4 border-lime-200"><Leaf size={48} className="text-lime-500" /></div>
+                            <h1 className="text-4xl font-black text-lime-800 mb-2">Heal</h1>
+                            <p className="text-lime-700 font-bold text-lg mb-8 max-w-xs">Play your part in saving the planet, one day at a time.</p>
+                            <button onClick={() => user ? setView('main') : setView('login')} className="bg-lime-500 text-white w-full py-4 rounded-2xl font-black text-xl btn-game border-lime-600 shadow-xl">{user ? 'CONTINUE' : 'PLAY NOW'}</button>
+                        </div>
+                    )}
 
-                        {view === 'login' && <LoginScreen onLogin={handleLogin} />}
+                    {view === 'login' && <LoginScreen onLogin={handleLogin} />}
 
                         {view === 'main' && (
                             <>
@@ -926,7 +1058,7 @@
                         {view === 'playing_game' && (
                             <div className="h-full p-6 pt-10 fade-in flex flex-col">
                                 <button onClick={() => setView('main')} className="mb-4 text-slate-500 font-bold flex items-center gap-2 hover:bg-slate-200 p-2 rounded-lg w-fit transition-colors"><ArrowRight className="rotate-180" size={20}/> Back to Arcade</button>
-                                <div className="flex-1 bg-white rounded-3xl shadow-2xl p-4 border-4 border-slate-200">
+                                <div className="flex-1 bg-white rounded-[2rem] shadow-2xl p-4 border-b-8 border-slate-200 overflow-hidden">
                                     {activeGame === 'lights' && <EnergySaverGame onComplete={handleGameComplete} />}
                                     {activeGame === 'trash' && <TrashMasterGame onComplete={handleGameComplete} />}
                                     {activeGame === 'pipes' && <PipePatrolGame onComplete={handleGameComplete} />}
@@ -941,12 +1073,12 @@
                                 <div className="mb-6"><div className="w-24 h-24 bg-yellow-400 rounded-full mx-auto flex items-center justify-center text-white border-4 border-yellow-500 shadow-xl animate-bounce-short"><Trophy size={48} /></div></div>
                                 <h2 className="text-3xl font-black text-slate-800 mb-2">Mission Complete!</h2>
                                 <p className="text-slate-500 font-bold mb-8">You earned +100 XP and Coins.</p>
-                                <div className="bg-white rounded-3xl p-6 shadow-xl border-b-8 border-slate-100 mb-6">
+                                <div className="bg-white rounded-[2rem] p-6 shadow-xl border-b-8 border-slate-100 mb-6">
                                     <p className="text-xs uppercase tracking-widest font-black text-slate-400 mb-2">Total Score</p>
                                     <p className="text-6xl font-black text-lime-600">{quizScore}</p>
                                 </div>
                                 {quizRedFlags.length > 0 ? (
-                                    <div className="text-left bg-red-50 rounded-3xl p-6 border-2 border-red-100 mb-6">
+                                    <div className="text-left bg-red-50 rounded-[2rem] p-6 border-b-4 border-red-100 mb-6">
                                         <h3 className="font-black text-red-500 mb-4 flex items-center gap-2"><AlertCircle size={20}/> Improvements</h3>
                                         {quizRedFlags.map((flag, idx) => (<div key={idx} className="mb-3 last:mb-0"><p className="font-bold text-slate-700 text-sm">{flag.title}</p><p className="text-red-500 text-xs font-bold">Try to avoid: {flag.issue}</p></div>))}
                                     </div>
